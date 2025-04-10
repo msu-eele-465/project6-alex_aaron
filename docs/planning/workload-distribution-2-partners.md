@@ -5,47 +5,47 @@ It is recommended that at least some of the functionality is a shared responsibi
 You are encouraged to support each other with an overall goal of successfully completing the project. If one person struggles with their responsibility, the other member is encouraged to step in. However, an agreement should be struck between the partners wherein one partner gives up some of the assigned points for that function relative to the amount of help received.  
 
 You will fill out this form:
-1. Before the project starts. This is to document your intention. 
+1. Before the project starts. This is to document your intention.
 2. Before the demo if there was any deviation from the initial plan.
 
 | Requirement/specification                                                              | Points | Partner 1 | Partner 2  |
 |----------------------------------------------------------------------------------------|--------|-----------|------------|
-| Introduction                                                                           | 1      |           |            |
-| Circuit diagram                                                                        | 1      |           |            |
-| System architecture diagram                                                            | 1      |           |            |
-| High-level flowchart                                                                   | 1      |           |            |
-| Professional demo                                                                      | 2      |           |            |
-| Collect ambient temperature using the LM19                                             | 2      |           |            |
-| Collect data every 0.5 s (proof required)                                              | 1      |           |            |
-| Collect the plant’s temperature using the LM92                                         | 6      |           |            |
-| Collect data every 0.5 s (proof required)                                              | 1      |           |            |
-| Collect the time spent in the present mode of operation using an I2C RTC               | 2      |           |            |
-| Collect data every 1 s (proof required)                                                | 1      |           |            |
-| Produce a moving average of the temperatures                                           | 5      |           |            |
-| Regardless of the selected mode, the Peltier must be turned off after 5 minutes        | 2      |           |            |
-| The Peltier device can be turned off                                                   | 2      |           |            |
-| The Peltier device can be configured to heat                                           | 2      |           |            |
-| The Peltier device can be configured to cool                                           | 2      |           |            |
-| The Peltier device can be configured to match the ambient temperature                  | 2      |           |            |
-| LCD displays the mode of operation                                                     | 2      |           |            |
-| Display  the mode string in the upper-left corner                                      | 1      |           |            |
-| Display the ambient temperature                                                        | 2      |           |            |
-| Refresh the temperature at least every 2 s                                             | 1      |           |            |
-| Display the temperature in the top-right corner                                        | 1      |           |            |
-| Display the temperature with a resolution of 0.1 C                                     | 1      |           |            |
-| Display the plant temperature                                                          | 2      |           |            |
-| Refresh the temperature at least every 2 s                                             | 1      |           |            |
-| Display the temperature in the bottom-right corner                                     | 1      |           |            |
-| Display the temperature with a resolution of 0.1 C                                     | 1      |           |            |
-| Display the window size                                                                | 2      |           |            |
-| Display the time spent in the current mode of operation                                | 2      |           |            |
-| Refresh the time at least every 1 s                                                    | 1      |           |            |
-| Display the seconds in the bottom row of the LCD                                       | 1      |           |            |
-| Display up to a 3-digit number                                                         | 1      |           |            |
-| When the system is actively heating, the lights should fill to the right               | 2      |           |            |
-| When the system is actively cooling, the lights should fill to the left                | 2      |           |            |
-| When not actively heating or cooling, the lights should be off                         | 2      |           |            |
-| Total                                                                                  | 60     |           |            |
+| Introduction                                                                           | 1      | 0.5       | 0.5        |
+| Circuit diagram                                                                        | 1      | 0.5       | 0.5        |
+| System architecture diagram                                                            | 1      | 0.5       | 0.5        |
+| High-level flowchart                                                                   | 1      | 0.5       | 0.5        |
+| Professional demo                                                                      | 2      | 1         | 1          |
+| Collect ambient temperature using the LM19                                             | 2      | 1         | 1          |
+| Collect data every 0.5 s (proof required)                                              | 1      | 0.5       | 0.5        |
+| Collect the plant’s temperature using the LM92                                         | 6      | 3         | 3          |
+| Collect data every 0.5 s (proof required)                                              | 1      | 0.5       | 0.5        |
+| Collect the time spent in the present mode of operation using an I2C RTC               | 2      | 1         | 1          |
+| Collect data every 1 s (proof required)                                                | 1      | 0.5       | 0.5        |
+| Produce a moving average of the temperatures                                           | 5      | 2.5       | 2.5        |
+| Regardless of the selected mode, the Peltier must be turned off after 5 minutes        | 2      | 1         | 1          |
+| The Peltier device can be turned off                                                   | 2      | 1         | 1          |
+| The Peltier device can be configured to heat                                           | 2      | 1         | 1          |
+| The Peltier device can be configured to cool                                           | 2      | 1         | 1          |
+| The Peltier device can be configured to match the ambient temperature                  | 2      | 1         | 1          |
+| LCD displays the mode of operation                                                     | 2      | 1         | 1          |
+| Display  the mode string in the upper-left corner                                      | 1      | 0.5       | 0.5        |
+| Display the ambient temperature                                                        | 2      | 1         | 1          |
+| Refresh the temperature at least every 2 s                                             | 1      | 0.5       | 0.5        |
+| Display the temperature in the top-right corner                                        | 1      | 0.5       | 0.5        |
+| Display the temperature with a resolution of 0.1 C                                     | 1      | 0.5       | 0.5        |
+| Display the plant temperature                                                          | 2      | 1         | 1          |
+| Refresh the temperature at least every 2 s                                             | 1      | 0.5       | 0.5        |
+| Display the temperature in the bottom-right corner                                     | 1      | 0.5       | 0.5        |
+| Display the temperature with a resolution of 0.1 C                                     | 1      | 0.5       | 0.5        |
+| Display the window size                                                                | 2      | 1         | 1          |
+| Display the time spent in the current mode of operation                                | 2      | 1         | 1          |
+| Refresh the time at least every 1 s                                                    | 1      | 0.5       | 0.5        |
+| Display the seconds in the bottom row of the LCD                                       | 1      | 0.5       | 0.5        |
+| Display up to a 3-digit number                                                         | 1      | 0.5       | 0.5        |
+| When the system is actively heating, the lights should fill to the right               | 2      | 1         | 1          |
+| When the system is actively cooling, the lights should fill to the left                | 2      | 1         | 1          |
+| When not actively heating or cooling, the lights should be off                         | 2      | 1         | 1          |
+| Total                                                                                  | 60     | 30        | 30         |
 
 
 ## 🚀 Extra credit points
