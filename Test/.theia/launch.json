@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "keypad-test-proj3",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "keypad-test-proj3",
+                "resourceId": "/keypad-test-proj3"
+            }
+        }
+    ]
+}
