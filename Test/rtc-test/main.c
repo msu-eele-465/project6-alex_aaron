@@ -1,82 +1,82 @@
-/* --COPYRIGHT--,BSD
- * Copyright (c) 2018, Texas Instruments Incorporated
- * All rights reserved.
+#include <msp430.h>
+#include <stdbool.h>
+
+/**
+ *  PROJECT 6: Keypad Test
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *  Aaron McLean & Alex Deadmond    EELE 465
  *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *  Last Updated: 04/14/2025
  *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * --/COPYRIGHT--*/
-//***************************************************************************************
-//  Blink the LED Demo - Software Toggle P1.0
-//
-//  Description; Toggle P1.0 inside of a software loop using DriverLib.
-//  ACLK = n/a, MCLK = SMCLK = default DCO
-//
-//                MSP4302355
-//             -----------------
-//         /|\|              XIN|-
-//          | |                 |
-//          --|RST          XOUT|-
-//            |                 |
-//            |             P1.0|-->LED
-//
-//  E. Chen
-//  Texas Instruments, Inc
-//  May 2018
-//  Built with Code Composer Studio v8
-//***************************************************************************************
+ *  A program that reads the real time clock via I2C
+ */
 
-#include <driverlib.h>
+int Data_In = 0;  // Reserve a byte of memory for storing the received data.
 
-int main(void) {
+int main(void)
+{
+    WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
 
-    volatile uint32_t i;
+    // 1. Put eUSCI_B0 into software reset
+    UCB0CTLW0 |= UCSWRST;           // UCSWRST=1 for eUSCI_B0 in SW reset
 
-    // Stop watchdog timer
-    WDT_A_hold(WDT_A_BASE);
+    // 2. Configure eUSCI_B0
+    UCB0CTLW0 |= UCSSEL_3;          // Choose BRCLK=SMCLK=1MHz
+    UCB0BRW = 10;                   // Divide BRCLK by 10 for SCL=100kHz
+    UCB0CTLW0 |= UCMODE_3;          // Put into I2C mode
+    UCB0CTLW0 |= UCMST;             // Put into master mode
+    UCB0I2CSA = 0x0068;             // Slave address = 0x68
+    UCB0TBCNT = 0x01;               // Send 1 byte of data
+    UCB0CTLW1 |= UCASTP_2;          // Auto STOP when UCB0TBCNT reached
 
-    // Set P1.0 to output direction
-    GPIO_setAsOutputPin(
-        GPIO_PORT_P1,
-        GPIO_PIN0
-        );
+    // 3. Configure Ports
+    P1SEL1 &= ~BIT3;                // We want P1.3 = SCL
+    P1SEL0 |= BIT3;
+    P1SEL1 &= ~BIT2;                // We want P1.2 = SDA
+    P1SEL0 |= BIT2;
+    PM5CTL0 &= ~LOCKLPM5;           // Disable LPM
 
-    // Disable the GPIO power-on default high-impedance mode
-    // to activate previously configured port settings
-    PMM_unlockLPM5();
+    // 4. Take eUSCI_B0 out of SW reset
+    UCB0CTLW0 &= ~UCSWRST;          // UCSWRST=0 for eUSCI_B0 in SW reset
 
-    while(1)
-    {
-        // Toggle P1.0 output
-        GPIO_toggleOutputOnPin(
-            GPIO_PORT_P1,
-            GPIO_PIN0
-            );
+    // 5. Enable Interrupts
+    UCB0IE |= UCTXIE0;              // Enable I2C Tx0 IRQ
+    UCB0IE |= UCRXIE0;              // Enable I2C Rx0 IRQ
+    __enable_interrupt();           // Enable Maskable IRQs
 
-        // Delay
-        for(i=10000; i>0; i--);
+    while(1){
+        // Transmit Register Address with Write Message
+        UCB0CTLW0 |= UCTR;          // Put into Tx mode
+        UCB0CTLW0 |= UCTXSTT;       // Generate START cond.
+
+        while ((UCB0IFG & UCSTPIFG) == 0);  // Wait for STOP
+        UCB0IFG &= ~UCSTPIFG;       // Clear STOP flag
+
+        // Receive Data from Rx
+        UCB0CTLW0 &= ~UCTR;         // Put into Rx mode
+        UCB0CTLW0 |= UCTXSTT;       // Generate START cond.
+
+        while ((UCB0IFG & UCSTPIFG) == 0);  // Wait for STOP
+        UCB0IFG &= ~UCSTPIFG;       // Clear STOP flag
+    }
+
+    return 0;
+}
+
+// Interrupt Service Routines
+
+#pragma vector=EUSCI_B0_VECTOR
+__interrupt void EUSCI_B0_I2C_ISR(void){
+    switch(UCB0IV){
+        case 0x16:                  // ID 16: RXIFG0
+            Data_In = UCB0RXBUF;   // Retrieve data
+            break;
+
+        case 0x18:                  // ID 18: TXIFG0
+            UCB0TXBUF = 0x03;      // Send Reg Addr
+            break;
+
+        default:
+            break;
     }
 }
