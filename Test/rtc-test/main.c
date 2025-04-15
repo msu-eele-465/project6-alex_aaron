@@ -13,6 +13,9 @@
 
 int Data_In = 0;  // Reserve a byte of memory for storing the received data.
 
+unsigned char TimeData[2];  // Array to store minutes and hours
+unsigned char RXByteCtr = 0;
+
 int main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
@@ -58,6 +61,8 @@ int main(void)
 
         while ((UCB0IFG & UCSTPIFG) == 0);  // Wait for STOP
         UCB0IFG &= ~UCSTPIFG;       // Clear STOP flag
+
+        __delay_cycles(50000);      // Simple delay between reads
     }
 
     return 0;
@@ -70,10 +75,16 @@ __interrupt void EUSCI_B0_I2C_ISR(void){
     switch(UCB0IV){
         case 0x16:                  // ID 16: RXIFG0
             Data_In = UCB0RXBUF;   // Retrieve data
+
+            // if (RXByteCtr < 2) {
+            //     TimeData[RXByteCtr++] = UCB0RXBUF;
+            // }
+
             break;
 
         case 0x18:                  // ID 18: TXIFG0
-            UCB0TXBUF = 0x03;      // Send Reg Addr
+            //UCB0TXBUF = 0x03;      // Send Reg Addr
+            UCB0TXBUF = 0x01;  // Start reading from register 0x00 (Minutes)
             break;
 
         default:

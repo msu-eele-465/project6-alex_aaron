@@ -9,6 +9,15 @@
                 "name": "keypad-test-proj3",
                 "resourceId": "/keypad-test-proj3"
             }
+        },
+        {
+            "name": "rtc-test",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "rtc-test",
+                "resourceId": "/rtc-test"
+            }
         }
     ]
 }
