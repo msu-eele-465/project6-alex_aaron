@@ -1,47 +1,68 @@
 #include <msp430.h>
+#include <string.h>
 
-int Data_Cnt;
-int Temp_Plant;
-int Temp_Ambient;
-char Packet[] = {0x03 /*replace with correct register address*/, 0x33 /*Byte one of ambient temp*/, 0x44 /*byte two of ambient temp*/,};
+float Temp_Plant;
+float Temp_Ambient;
+int plant_mode;
+
+uint8_t Packet[9];  // 1 byte for plant_mode, 4 bytes for each float
+
+int Data_Cnt = 0;
+
+void floatToBytes(float f, uint8_t *bytes) {
+    memcpy(bytes, &f, sizeof(float));
+}
 
 int main(void) {
 
-    WDTCTL |= WDTHOLD;
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog
 
-    UCB0CTLW0 |= UCSWRST;
+    // Initialize values
+    Temp_Ambient = 72.4;
+    Temp_Plant = 73.4;
+    plant_mode = 1;
 
-    UCB0CTLW0 |= UCSSEL__SMCLK;
-    UCB0BRW |= 10;
+    // Convert float to byte arrays
+    Packet[0] = (uint8_t)plant_mode;
+    floatToBytes(Temp_Plant, &Packet[1]);
+    floatToBytes(Temp_Ambient, &Packet[5]);
 
-    UCB0CTLW0 |= UCMODE_3;      // put in i2c mode
-    UCB0CTLW0 |= UCMST;         // put in master mode
-    UCB0CTLW0 |= UCTR;          // transmit mode (to start it will change throughout the project)
-    UCB0I2CSA = 0xABCD;         // enter slave address
-    UCB0CTLW1 |= UCASTP_2;
-
+    // I2C Setup
+    UCB0CTLW0 |= UCSWRST; // Hold eUSCI in reset
+    UCB0CTLW0 |= UCSSEL__SMCLK | UCMODE_3 | UCMST | UCTR; // SMCLK, I2C master, transmit
+    UCB0BRW = 10;
+    UCB0I2CSA = 0x48; // <-- your actual 7-bit slave address here
+    UCB0CTLW1 |= UCASTP_2; // Auto stop after UCB0TBCNT
     UCB0TBCNT = sizeof(Packet);
 
-    P1SEL1 &= ~BIT3;            // SCL
-    P1SEL0 |= BIT3;
-    P1SEL1 &= ~BIT2;
-    P1SEL0 |= BIT2;             // SDA
+    // Set I2C pins
+    P1SEL1 &= ~(BIT2 | BIT3);
+    P1SEL0 |= BIT2 | BIT3;
 
+    // Unlock GPIO
     PM5CTL0 &= ~LOCKLPM5;
 
-    UCB0CTLW0 &= ~UCSWRST;
+    UCB0CTLW0 &= ~UCSWRST; // Release eUSCI from reset
 
     UCB0IE |= UCTXIE0;
     __enable_interrupt();
 
-    int i;
-    while(1) {
-        UCB0CTLW0 |= UCTXSTT;   //start condition
-        for(i=0; i<100; i++){}  // delay
+    while (1) {
+        // Optional: update values here and refresh Packet contents
+
+        // Refresh data in Packet before each transmission if dynamic
+        Packet[0] = (uint8_t)plant_mode;
+        floatToBytes(Temp_Plant, &Packet[1]);
+        floatToBytes(Temp_Ambient, &Packet[5]);
+
+        UCB0CTLW0 |= UCTXSTT; // Start transmission
+        __delay_cycles(10000); // Simple delay (adjust as needed)
     }
+
     return 0;
 }
 
+// I2C Transmit ISR
 #pragma vector=EUSCI_B0_VECTOR
 __interrupt void EUSCI_B0_I2C_ISR(void){
     if(Data_Cnt == (sizeof(Packet) - 1)){
