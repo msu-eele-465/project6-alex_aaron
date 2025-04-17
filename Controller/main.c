@@ -1,168 +1,141 @@
-/* --COPYRIGHT--,BSD
- * Copyright (c) 2020, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * --/COPYRIGHT--*/
-//*****************************************************************************
-//         GUI Composer Simple MessagePack Demo using MSP430
-//
-// Texas Instruments, Inc.
-// ******************************************************************************
-
 #include <msp430.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <HAL.h>
-#include <GUI_mpack.h>
-#include <GUIComm.h>
-#include <QmathLib.h>
-#include <callbacks_mpack.h>
+#include <math.h>
 
-// Q8 is used in this demo because the variable qCounter ranges 0.0-100.0
+/**
+ *  PROJECT 6: Keypad Test
+ *
+ *  Aaron McLean & Alex Deadmond    EELE 465
+ *
+ *  Last Updated: 02/20/2025
+ *
+ *  A program that takes inputs from a membrain
+ *  keypad and detemines a locked or unlocked state,
+ *  and outputs state and patterns on an LED strip.
+ *  The program also drives the heating and cooling
+ *  of a peltier device using two different temperature
+ *  inputs.
+ */
 
-#define STR_LEN_TWO 2
-#define STR_LEN_SEVEN 7
+volatile unsigned int mode = 0;
 
-// Global variable use to track the of state of GUI and counter values
-volatile uint8_t u8Counter;
-volatile uint16_t u16Counter;
-volatile uint32_t u32Counter;
-volatile _q qCounter;
-volatile bool bUpdateGUI;
+// Function prototypes
+void keypad_init();
+void delay();
+char readKeypad();
 
-//! \brief RX Command structure.
-//!         The corresponding callback will be called when the command is
-//!         received from GUI.
-//! Note: shorter command names take less time to process
-const tGUI_RxCmd GUI_RXCommands[] =
-{
-     {"bEnable",    GUICallback_boolEnable},
-     {"u16Data",    GUICallback_QMathData},
-};
+void fillLeft(void) {
+    static unsigned int position = 0;
+    
+    P2OUT = (1 << position) - 1; // Turn on LEDs up to current position
+    position++;
+    
+    if (position > 8) {
+        position = 0;
+        P2OUT = 0; // Reset all LEDs
+    }
+}
 
-//! \brief Increments counters using MSP430 and sends data to GUI.
-//!
-//! \return none
-void main(void)
-{
-    WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
+void fillRight(void) {
+    static unsigned int position = 0;
+    
+    P2OUT = 0xFF << (8 - position); // Turn on LEDs from the right
+    position++;
+    
+    if (position > 8) {
+        position = 0;
+        P2OUT = 0; // Reset all LEDs
+    }
+}
 
-    // Initialize clock, GPIOs
-    HAL_System_Init();
+void keypad_init() {
 
-    // Initialize GUI layer
-    GUI_Init();
-    GUI_InitRxCmd( &GUI_RXCommands[0],
-                  (sizeof(GUI_RXCommands)/sizeof(GUI_RXCommands[0])) );
+    //  Set row as Inputs
+    P1DIR &= ~(BIT4 | BIT5 | BIT6 | BIT7);
+    P1REN |= BIT4 | BIT5 | BIT6 | BIT7;
+    P1OUT |= BIT4 | BIT5 | BIT6 | BIT7;
 
-    // Initialize variables
-    bUpdateGUI = false;              // Update GUI first time
-    u8Counter = 50;  // Counter8 will be updated on SW1 press in increments of 50
-    u16Counter = 5000; // Counter16 will be updated on button press in increments of 5000
-    u32Counter = 10000; // Counter32 will be updated on timer in increments of 10000
-    bEnableSwitch = true;           // Switch enables updating QMath
-    qCounter = _Q(0.5); // QMath counter updated on timer based on boolean in increments of qIncrement
-    qIncrement = _Q(0.5);
+    // P5.3 as colmn 4 as output & set low
+    P5DIR |= BIT3;
+    P5OUT &= ~BIT3;
 
-    // Configure SW1 and SW2 for interrupts (pins set as input with pull-up during GPIO initialization)
-    HAL_IO_InitButtons();
 
-    // Initialize a timer to update the counter
-    HAL_Timer_Init();
+}
 
-    // Send default value of variables
-    GUIComm_sendUInt8("c1", STR_LEN_TWO, u8Counter);
-    GUIComm_sendUInt16("c2", STR_LEN_TWO, u16Counter);
-    GUIComm_sendUInt32("c3", STR_LEN_TWO, u32Counter);
-    GUIComm_sendInt16("c4", STR_LEN_TWO, (int16_t) qCounter);
-    GUIComm_sendInt16("u16Data", STR_LEN_SEVEN, (int16_t) qIncrement);
-    GUIComm_sendBool("bEnable", STR_LEN_SEVEN, bEnableSwitch);
+int main(void) {
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+    keypad_init();
 
-    __bis_SR_register(LPM3_bits | GIE); // Enter LPM3 w/interrupt
+    // LED Bar Init
+    P2DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
+    P2OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
+
+    // Configure Timer A0 for periodic interrupts
+    TA0CTL = TASSEL__ACLK | MC__UP | TACLR; // ACLK, up mode
+    TA0CCR0 = 32768 / 4; // ~4Hz with ACLK
+    TA0CCTL0 = CCIE; // Enable CCR0 interrupt
+    
     __enable_interrupt();
 
-    while (1)
-    {
-         while (bUpdateGUI == true)
-         {
-             GUIComm_sendUInt8("c1", STR_LEN_TWO, u8Counter);
-             GUIComm_sendUInt16("c2", STR_LEN_TWO, u16Counter);
-             GUIComm_sendUInt32("c3", STR_LEN_TWO, u32Counter);
-             if (bEnableSwitch == true)
-             {
-                GUIComm_sendInt16("c4", STR_LEN_TWO, (int16_t) qCounter);
-             }
+    int l = 0;
+    char key;
 
-            bUpdateGUI = false;
-         }
+    // Disable digital I/O low-power default
+    PM5CTL0 &= ~LOCKLPM5;
 
-         __disable_interrupt();
-         if (bUpdateGUI == false)
-         {
-            __bis_SR_register(LPM3_bits | GIE); // Enter LPM3 w/interrupt
-            __no_operation();                   // For debug
-         }
-    }
-}
+    while (1) {
+        key = readKeypad();
 
-//! \brief Function called by HAL when there is a periodic timer interrupt
-//!
-//! \return none
-void TimerCallback(void)
-{
-    // Update 32-bit counter
-    u32Counter += 10000;
-    bUpdateGUI = true;
-    if (bEnableSwitch == true)
-    {
-        qCounter += qIncrement;
-
-        if (qCounter > _Q(100.0))
-        {
-            qCounter = 0;
+        if        (key=='A'){
+            mode = 2;
+        } else if (key=='B') {
+            mode = 1;
+        } else if (key=='C') {
+            mode = 3;
+        } else if (key=='D') {
+            mode = 3;
+        } else {
+            mode = 3;
         }
+        delay();
     }
 }
 
-//! \brief Function called by HAL when SW1 is pressed
-//!
-//! \return none
-void ButtonCallback_SW1(void)
-{
-    u8Counter += 50;
+void delay() {
+  volatile unsigned int i;
+  for (i = 0xFFFF; i > 0; i--)
+    ;
 }
 
-//! \brief Function called by HAL when SW2 is pressed
-//!
-//! \return none
-void ButtonCallback_SW2(void)
-{
-    u16Counter += 5000;
+char readKeypad() {
+  if        (!(P1IN & BIT4)) { // 'A'
+    return 'A';
+  } else if (!(P1IN & BIT5)) { // 'B'
+    return 'B';
+  } else if (!(P1IN & BIT6)) { // 'C'
+    return 'C';
+  } else if (!(P1IN & BIT7)) { // 'D'
+    return 'D';
+  } else {
+    return 'x';
+  }
 }
 
+// Timer A0 interrupt service routine
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void Timer_A0_ISR(void) {
+    switch(mode) {
+        case 1: // Fill from left
+            fillLeft();
+            break;
+        case 2: // Fill from right
+            fillRight();
+            break;
+        case 3: // All off
+            P2OUT = 0;
+            break;
+        default: // Off or invalid mode
+            P2OUT = 0;
+            break;
+    }
+}

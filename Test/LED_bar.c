@@ -31,7 +31,7 @@ int main(void) {
     PM5CTL0 &= ~LOCKLPM5; // Disable the GPIO power-on default high-impedance mode
     
     P2DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
-    P2OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7)
+    P2OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
     
     // Configure Timer A0 for periodic interrupts
     TA0CTL = TASSEL__ACLK | MC__UP | TACLR; // ACLK, up mode
