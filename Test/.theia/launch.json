@@ -18,6 +18,15 @@
                 "name": "rtc-test",
                 "resourceId": "/rtc-test"
             }
+        },
+        {
+            "name": "lcd-test",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "lcd-test",
+                "resourceId": "/lcd-test"
+            }
         }
     ]
 }
